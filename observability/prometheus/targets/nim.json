@@ -1,0 +1,8 @@
+[
+  {
+    "targets": ["host.docker.internal:18000"],
+    "labels": {
+      "service": "nim-llm"
+    }
+  }
+]

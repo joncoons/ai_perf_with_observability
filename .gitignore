@@ -1,0 +1,10 @@
+.ipynb_checkpoints/
+__pycache__/
+artifacts/
+benchmark_results/
+*.pyc
+
+.env
+.env.*
+!.env.example
+*.zip

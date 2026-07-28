@@ -1,0 +1,13 @@
+spec:
+  template:
+    metadata:
+      annotations:
+        benchmarking.nvidia.com/profile: throughput-8k-16
+    spec:
+      containers:
+        - name: nim-llm
+          env:
+            - name: NIM_MAX_MODEL_LEN
+              value: "8192"
+            - name: NIM_PASSTHROUGH_ARGS
+              value: "--max-num-seqs=16"
