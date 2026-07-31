@@ -1,0 +1,45 @@
+# Layer this file on compose.observability.yaml for the optional containerized
+# Jupyter/AIPerf deployment. Observability stays defined in one place.
+services:
+  benchmark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      HOME: /tmp/jupyter
+      NIM_BASE_URL: "${DOCKER_NIM_BASE_URL:-http://host.docker.internal:18000}"
+      NIM_METRICS_URL: "${DOCKER_NIM_METRICS_URL:-http://host.docker.internal:18000/v1/metrics}"
+      NIM_TOKENIZER_PATH: /opt/nim-tokenizer
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      GRAFANA_PUBLIC_URL: "http://localhost:${GRAFANA_PORT:-3001}"
+      OBSERVABILITY_MANAGED_EXTERNALLY: "true"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "${JUPYTER_BIND_ADDRESS:-127.0.0.1}:${JUPYTER_PORT:-8888}:8888"
+    volumes:
+      - .:/workspace
+      - "${NIM_TOKENIZER_PATH:?Set NIM_TOKENIZER_PATH in .env}:/opt/nim-tokenizer:ro"
+    user: "${BENCHMARK_UID:-1000}:${BENCHMARK_GID:-1000}"
+    command:
+      - jupyter
+      - lab
+      - --ip=0.0.0.0
+      - --port=8888
+      - --no-browser
+      - --ServerApp.root_dir=/workspace
+      - --IdentityProvider.token=${JUPYTER_TOKEN:-aiperf}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8888/api', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
