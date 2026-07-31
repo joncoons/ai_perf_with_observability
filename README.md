@@ -9,6 +9,7 @@ AIPerf captures client latency and throughput plus benchmark-window NIM metrics.
 - `notebooks/nim_aiperf_benchmark.ipynb`: validation, observability startup, smoke test, native AIPerf grid sweep, annotations, and result indexing.
 - `.env.example`: customer-editable endpoint, tokenizer, Kubernetes, observability, and offered-load settings.
 - `compose.observability.yaml`: local Prometheus and Grafana services.
+- `compose.benchmark.yaml` and `Dockerfile`: optional containerized Jupyter/AIPerf deployment layered on the same observability services.
 - `observability/`: Prometheus configuration and provisioned Grafana dashboard.
 - `k8s/profiles/`: an optional tuned comparison profile; it is not used for the default-runtime baseline.
 
@@ -98,6 +99,38 @@ docker compose --env-file .env -f compose.observability.yaml down
 ```
 
 Use `down -v` only when intentionally deleting Prometheus and Grafana volumes.
+
+## Optional Docker/Compose benchmark workspace
+
+This alternative runs Jupyter, AIPerf, Prometheus, and Grafana in Compose, so a local Conda environment is not required. It still targets an already-running NIM; it does not deploy the model server or include model weights.
+
+Set `NIM_TOKENIZER_PATH` in `.env` to the absolute host path of the tokenizer. If NIM is not reachable from containers at `host.docker.internal:18000`, also set `DOCKER_NIM_BASE_URL`, `DOCKER_NIM_METRICS_URL`, and `NIM_PROMETHEUS_TARGET` to container-reachable addresses. Set `BENCHMARK_UID`/`BENCHMARK_GID` to the host user numeric IDs when they are not `1000`.
+
+Build and start the full workspace:
+
+```bash
+docker compose --env-file .env \
+  -f compose.observability.yaml -f compose.benchmark.yaml \
+  up -d --build
+```
+
+Open `http://localhost:8888/lab?token=aiperf` (or use the `JUPYTER_PORT` and `JUPYTER_TOKEN` configured in `.env`), select `notebooks/nim_aiperf_benchmark.ipynb`, and run it as described above. The repository is bind-mounted at `/workspace`, so results persist in the host `benchmark_results/` directory.
+
+Check service health and logs:
+
+```bash
+docker compose --env-file .env \
+  -f compose.observability.yaml -f compose.benchmark.yaml ps
+docker compose --env-file .env \
+  -f compose.observability.yaml -f compose.benchmark.yaml logs benchmark
+```
+
+Stop the workspace while preserving Grafana and Prometheus data:
+
+```bash
+docker compose --env-file .env \
+  -f compose.observability.yaml -f compose.benchmark.yaml down
+```
 
 ## Measurement notes
 

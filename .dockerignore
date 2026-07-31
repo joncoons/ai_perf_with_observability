@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+!.env.example
+.ipynb_checkpoints
+__pycache__
+*.pyc
+*.zip
+artifacts
+benchmark_results
